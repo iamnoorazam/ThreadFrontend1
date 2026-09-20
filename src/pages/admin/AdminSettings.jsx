@@ -13,7 +13,6 @@ export default function AdminSettings() {
     payoutHoldDays: 7,
     payoutMinimum: 500,
     announcement: { enabled: false, text: '' },
-    razorpay: { keyId: '', keySecret: '' },
   });
   const [busy, setBusy] = useState(false);
 
@@ -29,10 +28,6 @@ export default function AdminSettings() {
         announcement: {
           enabled: Boolean(s.announcement?.enabled),
           text: s.announcement?.text || '',
-        },
-        razorpay: {
-          keyId: s.razorpay?.keyId || '',
-          keySecret: s.razorpay?.keySecret || '',
         },
       });
     } catch (err) {
@@ -56,10 +51,6 @@ export default function AdminSettings() {
         payoutHoldDays: Number(form.payoutHoldDays),
         payoutMinimum: Number(form.payoutMinimum),
         announcement: form.announcement,
-        razorpay: {
-          keyId: form.razorpay.keyId,
-          keySecret: form.razorpay.keySecret,
-        },
       });
       setNotice({ type: 'success', message: 'Settings saved.' });
       await load();
@@ -76,7 +67,7 @@ export default function AdminSettings() {
 
   return (
     <form onSubmit={save} className="max-w-2xl">
-      <PanelHeading title="Platform settings" subtitle="Commission, payment gateway and site-wide announcements." />
+      <PanelHeading title="Platform settings" subtitle="Commission, payouts and site-wide announcements." />
       <Notice notice={notice} />
 
       <div className="space-y-6 rounded-xl border border-stone-200 bg-white p-6">
@@ -132,26 +123,10 @@ export default function AdminSettings() {
 
         <div className="border-t border-stone-200 pt-5">
           <h3 className="mb-1 font-display text-lg font-semibold text-ink">Payment gateway (Razorpay)</h3>
-          <p className="mb-3 text-sm text-ink-light">Keys are stored on the server and only visible to admins.</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="label">Key ID</label>
-              <input
-                className={inputClass}
-                value={form.razorpay.keyId}
-                onChange={(e) => setForm((f) => ({ ...f, razorpay: { ...f.razorpay, keyId: e.target.value } }))}
-              />
-            </div>
-            <div>
-              <label className="label">Key secret</label>
-              <input
-                type="password"
-                className={inputClass}
-                value={form.razorpay.keySecret}
-                onChange={(e) => setForm((f) => ({ ...f, razorpay: { ...f.razorpay, keySecret: e.target.value } }))}
-              />
-            </div>
-          </div>
+          <p className="text-sm text-ink-light">
+            The gateway keys are set on the server (environment variables), not here, so they never sit in the
+            database or in this page.
+          </p>
         </div>
 
         <div className="border-t border-stone-200 pt-5">
