@@ -262,6 +262,8 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
     colors: (product?.colors || []).join(', '),
     price: product?.price ?? '',
     discountPrice: product?.discountPrice ?? '',
+    gstRate: product?.gstRate ?? 5,
+    hsnCode: product?.hsnCode || '',
     stockQuantity: product?.stockQuantity ?? 0,
     lowStockThreshold: product?.lowStockThreshold ?? 5,
     images: product?.images || [],
@@ -386,6 +388,8 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
         </div>
         <VField label="Price (₹)" name="price" type="number" value={form.price} onChange={handleChange} required />
         <VField label="Discount price (₹)" name="discountPrice" type="number" value={form.discountPrice} onChange={handleChange} />
+        <VField label="GST included in price (%)" name="gstRate" type="number" value={form.gstRate} onChange={handleChange} />
+        <VField label="HSN code (optional)" name="hsnCode" value={form.hsnCode} onChange={handleChange} placeholder="e.g. 6205" />
         <VField label="Low-stock threshold" name="lowStockThreshold" type="number" value={form.lowStockThreshold} onChange={handleChange} />
         <label className="flex items-center gap-2 text-sm sm:col-span-2">
           <input

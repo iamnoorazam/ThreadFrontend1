@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/client';
 import Spinner from '../../components/Spinner';
 import { Notice, PanelHeading, Badge, EmptyBox } from '../../components/dashboard';
-import { formatINR, formatDate, formatDateTime, parseErrorMessage } from '../../utils/format';
+import { formatINR, formatDateTime, parseErrorMessage } from '../../utils/format';
+import { printInvoice, INVOICE_READY } from '../../utils/invoicePrint';
 
 const ITEM_STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 
@@ -48,6 +49,14 @@ export default function VendorOrders() {
       await load(pagination.page, statusFilter);
     } catch (err) {
       setNotice({ type: 'error', message: parseErrorMessage(err) });
+    }
+  };
+
+  const openInvoice = async (subOrderId) => {
+    try {
+      await printInvoice(subOrderId);
+    } catch (err) {
+      setNotice({ type: 'error', message: parseErrorMessage(err, err?.message) });
     }
   };
 
@@ -109,12 +118,11 @@ export default function VendorOrders() {
                         <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
-                    <button
-                      onClick={() => printInvoice(order, shopItems)}
-                      className="btn-secondary px-3 py-1.5 text-xs"
-                    >
-                      Print invoice
-                    </button>
+                    {INVOICE_READY.includes(order.orderStatus) && (
+                      <button onClick={() => openInvoice(order._id)} className="btn-secondary px-3 py-1.5 text-xs">
+                        GST invoice
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -179,64 +187,4 @@ export default function VendorOrders() {
       )}
     </div>
   );
-}
-
-function printInvoice(order, items) {
-  const win = window.open('', '_blank', 'width=800,height=900');
-  if (!win) return;
-  const rows = items
-    .map(
-      (i) => `
-        <tr>
-          <td style="padding:8px;border-bottom:1px solid #e5e5e5">${i.title}</td>
-          <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:center">${i.quantity}</td>
-          <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:right">${formatINR(i.price)}</td>
-          <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:right">${formatINR(i.price * i.quantity)}</td>
-        </tr>`
-    )
-    .join('');
-  const addr = order.shippingAddress || {};
-  win.document.write(`<!DOCTYPE html>
-<html>
-<head><title>Invoice ${String(order.orderId).slice(-8).toUpperCase()}</title>
-<style>
-  body { font-family: Arial, sans-serif; color: #1c1917; margin: 40px; }
-  h1 { font-size: 22px; margin: 0; }
-  .muted { color: #78716c; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 24px; }
-  th { text-align: left; font-size: 12px; text-transform: uppercase; color: #78716c; border-bottom: 2px solid #1c1917; padding: 8px; }
-  .right { text-align: right; }
-  .totals { margin-top: 16px; text-align: right; }
-  .totals div { padding: 2px 0; }
-  .grand { font-size: 18px; font-weight: bold; }
-  .foot { margin-top: 40px; font-size: 11px; color: #78716c; }
-</style>
-</head>
-<body onload="window.print()">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div><h1>Thread &amp; Co.</h1><p class="muted">Invoice for order ${String(order.orderId).slice(-8).toUpperCase()}</p></div>
-    <div style="text-align:right"><p class="muted">${formatDateTime(order.createdAt)}</p></div>
-  </div>
-  <div style="margin-top:20px">
-    <p style="font-size:13px"><strong>Ship to:</strong><br>
-    ${addr.fullName || ''}<br>
-    ${addr.line1 || ''}${addr.line2 ? ', ' + addr.line2 : ''}<br>
-    ${addr.city || ''}, ${addr.state || ''} ${addr.postalCode || ''}<br>
-    ${addr.country || ''} · ${addr.phone || ''}</p>
-  </div>
-  <table>
-    <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="totals">
-    <div>Subtotal: ${formatINR(order.subtotal)}</div>
-    ${order.discount ? `<div>Discount: -${formatINR(order.discount)}</div>` : ''}
-    <div>Shipping: ${formatINR(order.shippingFee)}</div>
-    <div class="grand">Total: ${formatINR(order.total)}</div>
-    <div class="muted">Payment: ${(order.paymentMethod || '').toUpperCase()} · ${order.paymentStatus || ''}</div>
-  </div>
-  <p class="foot">Generated on ${formatDate(new Date().toISOString())} · Thread &amp; Co. marketplace</p>
-</body>
-</html>`);
-  win.document.close();
 }

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import api from '../api/client';
 import Spinner from '../components/Spinner';
 import { formatINR, formatDate, parseErrorMessage } from '../utils/format';
+import { printInvoice, INVOICE_READY } from '../utils/invoicePrint';
 
 const STAGE_NAMES = [
   'Order Placed',
@@ -30,6 +31,7 @@ export default function OrderTracking() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
 
   const load = useCallback(
     async (quiet = false) => {
@@ -225,6 +227,9 @@ export default function OrderTracking() {
               {order.subOrders.length > 1 ? `Shipments (${order.subOrders.length})` : 'Shipment'}
             </p>
           </div>
+          {invoiceError && (
+            <p className="border-b border-ink/10 bg-clay-50 px-6 py-3 text-sm text-clay-700">{invoiceError}</p>
+          )}
           <div className="divide-y divide-ink/10">
             {order.subOrders.map((sub) => {
               const link = /^https?:\/\//.test(sub.tracking?.trackingNumber || '') ? sub.tracking.trackingNumber : '';
@@ -249,9 +254,23 @@ export default function OrderTracking() {
                       </p>
                     )}
                   </div>
-                  <span className="rounded-full border border-brand-600 px-3 py-1 font-mono text-[10px] uppercase tracking-tag text-brand-700">
-                    {sub.orderStatus.replace(/_/g, ' ')}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="rounded-full border border-brand-600 px-3 py-1 font-mono text-[10px] uppercase tracking-tag text-brand-700">
+                      {sub.orderStatus.replace(/_/g, ' ')}
+                    </span>
+                    {INVOICE_READY.includes(sub.orderStatus) && (
+                      <button
+                        onClick={() =>
+                          printInvoice(sub._id)
+                            .then(() => setInvoiceError(''))
+                            .catch((err) => setInvoiceError(parseErrorMessage(err, err?.message)))
+                        }
+                        className="text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                      >
+                        Invoice
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

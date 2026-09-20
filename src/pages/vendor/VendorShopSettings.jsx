@@ -46,6 +46,9 @@ export default function VendorShopSettings() {
         banner: shop.banner,
         contact: shop.contact,
         bankDetails: shop.bankDetails,
+        legalName: shop.legalName,
+        gstin: shop.gstin,
+        registeredAddress: shop.registeredAddress,
       });
       setShop(res.data.shop);
       setNotice({ type: 'success', message: 'Shop settings saved.' });
@@ -143,6 +146,40 @@ export default function VendorShopSettings() {
                 onChange={(e) => set('contact.email', e.target.value)}
               />
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-stone-200 pt-5">
+          <h3 className="mb-1 font-display text-lg font-semibold text-ink">Business details (for invoices)</h3>
+          <p className="mb-3 text-sm text-ink-light">
+            Printed on the invoices customers receive. With a GSTIN we issue GST tax invoices; without one, a bill of
+            supply with no tax. A GSTIN needs a complete registered address.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Legal / trade name</label>
+              <input className="input" value={shop.legalName || ''} onChange={(e) => set('legalName', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">GSTIN (optional)</label>
+              <input
+                className="input uppercase"
+                maxLength={15}
+                placeholder="27AAPFU0939F1ZV"
+                value={shop.gstin || ''}
+                onChange={(e) => set('gstin', e.target.value.toUpperCase())}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Registered address</label>
+              <input className="input" placeholder="Address line 1" value={shop.registeredAddress?.line1 || ''} onChange={(e) => set('registeredAddress.line1', e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <input className="input" placeholder="Address line 2 (optional)" value={shop.registeredAddress?.line2 || ''} onChange={(e) => set('registeredAddress.line2', e.target.value)} />
+            </div>
+            <input className="input" placeholder="City" value={shop.registeredAddress?.city || ''} onChange={(e) => set('registeredAddress.city', e.target.value)} />
+            <input className="input" placeholder="State" value={shop.registeredAddress?.state || ''} onChange={(e) => set('registeredAddress.state', e.target.value)} />
+            <input className="input" placeholder="PIN code" value={shop.registeredAddress?.postalCode || ''} onChange={(e) => set('registeredAddress.postalCode', e.target.value)} />
           </div>
         </div>
 
