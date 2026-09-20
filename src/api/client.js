@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const ACCESS_TOKEN_KEY = 'tco_access_token';
+const IMPERSONATING_KEY = 'tco_impersonating';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -37,6 +38,19 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
+    if (error.response?.status === 401 && localStorage.getItem(IMPERSONATING_KEY)) {
+      // The 30-minute "acting as" token ended. Never replay the request as the admin
+      // (it was meant for another user): restore the admin session and go back.
+      localStorage.removeItem(IMPERSONATING_KEY);
+      try {
+        await refreshAccessToken();
+      } catch {
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+      }
+      window.location.assign('/admin');
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !original._retried && original.url !== '/auth/login') {
       original._retried = true;
       try {
@@ -54,5 +68,9 @@ api.interceptors.response.use(
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
 export const setAccessToken = (token) => localStorage.setItem(ACCESS_TOKEN_KEY, token);
 export const clearAccessToken = () => localStorage.removeItem(ACCESS_TOKEN_KEY);
+export const setImpersonating = (on) =>
+  on ? localStorage.setItem(IMPERSONATING_KEY, '1') : localStorage.removeItem(IMPERSONATING_KEY);
+// Swaps an "acting as" token back for the admin's own session (via the refresh cookie).
+export const restoreAdminSession = () => refreshAccessToken();
 
 export default api;

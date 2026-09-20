@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ImpersonationBanner from './components/ImpersonationBanner';
 
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -10,6 +11,7 @@ import ShopsPage from './pages/ShopsPage';
 import ShopDetail from './pages/ShopDetail';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin';
 import Signup from './pages/Signup';
 import BecomeSeller from './pages/BecomeSeller';
 import Cart from './pages/Cart';
@@ -24,6 +26,7 @@ import NotFound from './pages/NotFound';
 function Layout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
+      <ImpersonationBanner />
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
@@ -41,6 +44,7 @@ export default function App() {
       <Route path="/shop/:id" element={<Layout><ShopDetail /></Layout>} />
       <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
       <Route path="/login" element={<Layout><Login /></Layout>} />
+      <Route path="/admin/login" element={<Layout><AdminLogin /></Layout>} />
       <Route path="/signup" element={<Layout><Signup /></Layout>} />
       <Route path="/become-seller" element={<Layout><BecomeSeller /></Layout>} />
       <Route path="/cart" element={<Layout><Cart /></Layout>} />

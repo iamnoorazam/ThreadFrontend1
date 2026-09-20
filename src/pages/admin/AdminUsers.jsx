@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/client';
 import Spinner from '../../components/Spinner';
 import { Notice, PanelHeading, EmptyBox } from '../../components/dashboard';
+import { useAuth } from '../../store/AuthContext';
 import { formatINR, formatDate, formatDateTime, parseErrorMessage } from '../../utils/format';
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
 ];
 
 export default function AdminUsers() {
+  const { impersonate } = useAuth();
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,23 @@ export default function AdminUsers() {
   useEffect(() => {
     load(1, role, filters);
   }, [load, role, filters]);
+
+  const actAs = async (user) => {
+    if (
+      !window.confirm(
+        `Act as ${user.name} (${user.role})? You will see and change the site exactly as they can. ` +
+          'Everything you change is logged under your admin account.'
+      )
+    ) {
+      return;
+    }
+    try {
+      await impersonate(user._id);
+      window.location.assign(user.role === 'vendor' ? '/vendor' : '/');
+    } catch (err) {
+      setNotice({ type: 'error', message: parseErrorMessage(err) });
+    }
+  };
 
   const changeStatus = async (user, accountStatus) => {
     const label = accountStatus === 'blocked' ? 'blocked' : accountStatus === 'deleted' ? 'deleted' : 'unblocked';
@@ -210,6 +229,11 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-3 text-ink-light">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {['customer', 'vendor'].includes(u.role) && u.accountStatus === 'active' && u.isActive !== false && (
+                      <button onClick={() => actAs(u)} className="mr-3 font-semibold text-brand-700 hover:underline">
+                        Act as
+                      </button>
+                    )}
                     {u.accountStatus === 'blocked' ? (
                       <button onClick={() => changeStatus(u, 'active')} className="font-semibold text-green-600 hover:underline">
                         Unblock
