@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/client';
 import Spinner from '../../components/Spinner';
 import ImageUploader from '../../components/ImageUploader';
+import VariantsEditor, { variantsToForm, variantsToPayload } from '../../components/VariantsEditor';
 import StarRating from '../../components/StarRating';
 import { Notice, PanelHeading, Badge, EmptyBox } from '../../components/dashboard';
 import { formatINR, formatDate, discountPercent, parseErrorMessage } from '../../utils/format';
@@ -377,6 +378,11 @@ function ProductViewModal({ product, onClose, onEdit, onModerate, onDelete }) {
                 row({ label: 'Age group', value: `${KIDS_AGE_LABELS[product.ageGroup] || product.ageGroup} · ${product.ageGroup}` })
               )}
               {row({ label: 'Sizes', value: product.sizes?.join(', ') })}
+              {product.variants?.length > 0 &&
+                row({
+                  label: 'Stock by variant',
+                  value: product.variants.map((v) => `${[v.size, v.color].filter(Boolean).join('/')}: ${v.stock}`).join(' · '),
+                })}
               {row({ label: 'Colours', value: product.colors?.join(', ') })}
               {row({ label: 'Product code', value: `#${String(product._id).slice(-8).toUpperCase()}` })}
               {row({ label: 'Added on', value: formatDate(product.createdAt) })}
@@ -433,6 +439,8 @@ function ProductFormModal({ mode, product, shops, categories, subCategories, loa
     colors: (product?.colors || []).join(', '),
     images: product?.images || [],
   });
+  const [trackVariants, setTrackVariants] = useState((product?.variants || []).length > 0);
+  const [variantRows, setVariantRows] = useState(variantsToForm(product?.variants));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -449,7 +457,13 @@ function ProductFormModal({ mode, product, shops, categories, subCategories, loa
     e.preventDefault();
     setBusy(true);
     setError('');
+    if (trackVariants && variantRows.length === 0) {
+      setError('Add at least one size/colour row, or turn off stock by size and colour.');
+      setBusy(false);
+      return;
+    }
     const payload = {
+      variants: trackVariants ? variantsToPayload(variantRows) : [],
       shopId: form.shopId,
       title: form.title,
       description: form.description,
@@ -586,10 +600,27 @@ function ProductFormModal({ mode, product, shops, categories, subCategories, loa
                 )}
                 <PField label="Price (₹)" name="price" type="number" value={form.price} onChange={handleChange} required />
                 <PField label="Discount price (₹)" name="discountPrice" type="number" value={form.discountPrice} onChange={handleChange} />
-                <PField label="Stock quantity" name="stockQuantity" type="number" value={form.stockQuantity} onChange={handleChange} required />
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={trackVariants}
+                    onChange={(e) => setTrackVariants(e.target.checked)}
+                    className="h-4 w-4 accent-brand-600"
+                  />
+                  <span className="font-medium text-ink">Track stock by size and colour</span>
+                </label>
+                {trackVariants ? (
+                  <VariantsEditor rows={variantRows} onChange={setVariantRows} />
+                ) : (
+                  <PField label="Stock quantity" name="stockQuantity" type="number" value={form.stockQuantity} onChange={handleChange} required />
+                )}
                 <PField label="Low-stock threshold" name="lowStockThreshold" type="number" value={form.lowStockThreshold} onChange={handleChange} />
-                <PField label="Sizes (comma separated)" name="sizes" value={form.sizes} onChange={handleChange} placeholder="S, M, L, XL" />
-                <PField label="Colours (comma separated)" name="colors" value={form.colors} onChange={handleChange} placeholder="Black, White, Navy" />
+                {!trackVariants && (
+                  <>
+                    <PField label="Sizes (comma separated)" name="sizes" value={form.sizes} onChange={handleChange} placeholder="S, M, L, XL" />
+                    <PField label="Colours (comma separated)" name="colors" value={form.colors} onChange={handleChange} placeholder="Black, White, Navy" />
+                  </>
+                )}
               </div>
             </div>
 

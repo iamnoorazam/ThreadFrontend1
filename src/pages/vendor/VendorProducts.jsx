@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/client';
 import Spinner from '../../components/Spinner';
 import ImageUploader from '../../components/ImageUploader';
+import VariantsEditor, { variantsToForm, variantsToPayload } from '../../components/VariantsEditor';
 import { Notice, PanelHeading, Badge, EmptyBox } from '../../components/dashboard';
 import { formatINR, parseErrorMessage } from '../../utils/format';
 import { KIDS_AGE_LIST, KIDS_AGE_LABELS } from '../../utils/kids';
@@ -266,6 +267,8 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
     images: product?.images || [],
     status: product?.status || 'draft',
   });
+  const [trackVariants, setTrackVariants] = useState((product?.variants || []).length > 0);
+  const [variantRows, setVariantRows] = useState(variantsToForm(product?.variants));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -297,8 +300,16 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
       return;
     }
 
+    if (trackVariants && variantRows.length === 0) {
+      setError('Add at least one size/colour row, or turn off stock by size and colour.');
+      setBusy(false);
+      return;
+    }
+
     const payload = {
       ...form,
+      // An empty list switches stock-by-variant off; otherwise the totals come from the rows.
+      variants: trackVariants ? variantsToPayload(variantRows) : [],
       ageGroup: form.gender === 'kids' ? form.ageGroup : undefined,
       sizes: form.sizes.split(',').map((s) => s.trim()).filter(Boolean),
       colors: form.colors.split(',').map((c) => c.trim()).filter(Boolean),
@@ -375,10 +386,25 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
         </div>
         <VField label="Price (₹)" name="price" type="number" value={form.price} onChange={handleChange} required />
         <VField label="Discount price (₹)" name="discountPrice" type="number" value={form.discountPrice} onChange={handleChange} />
-        <VField label="Stock quantity" name="stockQuantity" type="number" value={form.stockQuantity} onChange={handleChange} required />
         <VField label="Low-stock threshold" name="lowStockThreshold" type="number" value={form.lowStockThreshold} onChange={handleChange} />
-        <VField label="Sizes (comma separated)" name="sizes" value={form.sizes} onChange={handleChange} placeholder="S, M, L, XL" />
-        <VField label="Colours (comma separated)" name="colors" value={form.colors} onChange={handleChange} placeholder="Black, White, Navy" />
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={trackVariants}
+            onChange={(e) => setTrackVariants(e.target.checked)}
+            className="h-4 w-4 accent-brand-600"
+          />
+          <span className="font-medium text-ink">Track stock by size and colour</span>
+        </label>
+        {trackVariants ? (
+          <VariantsEditor rows={variantRows} onChange={setVariantRows} />
+        ) : (
+          <>
+            <VField label="Stock quantity" name="stockQuantity" type="number" value={form.stockQuantity} onChange={handleChange} required />
+            <VField label="Sizes (comma separated)" name="sizes" value={form.sizes} onChange={handleChange} placeholder="S, M, L, XL" />
+            <VField label="Colours (comma separated)" name="colors" value={form.colors} onChange={handleChange} placeholder="Black, White, Navy" />
+          </>
+        )}
         {form.gender === 'kids' && (
           <div className="sm:col-span-2">
             <label className="label">Age group <span className="text-red-500"> *</span></label>

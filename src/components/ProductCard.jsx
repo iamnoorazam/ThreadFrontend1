@@ -28,6 +28,11 @@ export default function ProductCard({ product, feature = false }) {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (soldOut) return;
+    // Stock is tracked per size/colour, so the shopper has to choose first.
+    if (product.variants?.length > 0) {
+      navigate(`/product/${product._id}`);
+      return;
+    }
     const result = await addToCart({ productId: product._id, quantity: 1 });
     if (result.ok) {
       openCart();

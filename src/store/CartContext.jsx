@@ -103,11 +103,19 @@ export const CartProvider = ({ children }) => {
         return { ok: false, message: 'Product not found or unavailable' };
       }
 
+      // Products with variants track stock per size/colour.
+      const variants = product.variants || [];
+      const variant = variants.find((v) => v.size === size && v.color === color);
+      if (variants.length > 0 && !variant) {
+        return { ok: false, message: 'Please choose an available size and colour' };
+      }
+      const stock = variants.length > 0 ? variant.stock : product.stockQuantity;
+
       const id = guestLineId(productId, size, color);
       const items = guestRef.current;
       const existing = items.find((i) => i._id === id);
       const nextQty = (existing?.quantity || 0) + quantity;
-      if (product.stockQuantity < nextQty) {
+      if (stock < nextQty) {
         return { ok: false, message: 'Insufficient stock' };
       }
 
@@ -118,7 +126,7 @@ export const CartProvider = ({ children }) => {
         title: product.title,
         image: product.images?.[0] || '',
         price: product.effectivePrice ?? product.price,
-        stock: product.stockQuantity,
+        stock,
         size,
         color,
         quantity: nextQty,

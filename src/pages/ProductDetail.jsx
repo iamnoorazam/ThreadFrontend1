@@ -56,6 +56,26 @@ export default function ProductDetail() {
   const price = product?.effectivePrice ?? product?.price;
   const off = discountPercent(product?.price, product?.discountPrice);
   const soldOut = product?.status === 'outOfStock' || product?.stockQuantity <= 0;
+
+  // Per-size/colour stock: with variants, availability depends on what is selected.
+  const variants = product?.variants || [];
+  const tracked = variants.length > 0;
+  const needSize = variants.some((v) => v.size);
+  const needColor = variants.some((v) => v.color);
+  const selectionComplete = !tracked || ((!needSize || size) && (!needColor || color));
+  const selectionStock = !tracked
+    ? product?.stockQuantity
+    : !selectionComplete
+      ? null
+      : (variants.find((v) => v.size === (needSize ? size : '') && v.color === (needColor ? color : ''))?.stock ?? 0);
+  const sizeInStock = (s) => !tracked || variants.some((v) => v.size === s && (!color || v.color === color) && v.stock > 0);
+  const colorInStock = (c) => !tracked || variants.some((v) => v.color === c && (!size || v.size === size) && v.stock > 0);
+  const maxQty = Math.max(1, selectionStock || 1);
+
+  // Keep the quantity within what the chosen size/colour has.
+  useEffect(() => {
+    setQuantity((q) => Math.min(q, maxQty));
+  }, [maxQty]);
   const images = product?.images?.length ? product.images : [];
 
   const ratingValue = useMemo(
@@ -68,6 +88,13 @@ export default function ProductDetail() {
 
   const handleAdd = async () => {
     if (soldOut) return;
+    if (!selectionComplete) {
+      setNotice({
+        type: 'error',
+        message: `Please choose a ${[needSize && !size && 'size', needColor && !color && 'colour'].filter(Boolean).join(' and ')}.`,
+      });
+      return;
+    }
     setNotice({ type: '', message: '' });
     const result = await addToCart({ productId: id, quantity, size, color });
     if (result.ok) {
@@ -206,7 +233,9 @@ export default function ProductDetail() {
                     <button
                       key={s}
                       onClick={() => setSize(s)}
-                      className={`min-w-12 rounded-md border px-4 py-2 font-mono text-sm transition-colors ${
+                      disabled={!sizeInStock(s)}
+                      title={sizeInStock(s) ? undefined : 'Sold out'}
+                      className={`min-w-12 rounded-md border px-4 py-2 font-mono text-sm transition-colors disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
                         size === s
                           ? 'border-brand-600 bg-brand-600 text-bone'
                           : 'border-ink/20 bg-transparent text-ink hover:border-brand-600'
@@ -257,7 +286,9 @@ export default function ProductDetail() {
                     <button
                       key={c}
                       onClick={() => setColor(c)}
-                      className={`rounded-md border px-4 py-2 text-sm transition-colors ${
+                      disabled={!colorInStock(c)}
+                      title={colorInStock(c) ? undefined : 'Sold out'}
+                      className={`rounded-md border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
                         color === c
                           ? 'border-brand-600 bg-brand-600 text-bone'
                           : 'border-ink/20 bg-transparent text-ink hover:border-brand-600'
@@ -283,7 +314,7 @@ export default function ProductDetail() {
                   </button>
                   <span className="w-12 text-center font-mono text-sm">{quantity}</span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(product.stockQuantity || 1, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                     aria-label="Increase quantity"
                     className="px-4 py-2.5 text-ink hover:text-brand-700"
                   >
@@ -292,8 +323,10 @@ export default function ProductDetail() {
                 </div>
               </div>
               <div className="font-mono text-[11px] uppercase tracking-tag text-ink-light">
-                {product.stockQuantity > 0 ? (
-                  <span className="text-brand-700">{product.stockQuantity} in stock</span>
+                {selectionStock === null ? (
+                  <span>Choose options to see stock</span>
+                ) : selectionStock > 0 ? (
+                  <span className="text-brand-700">{selectionStock} in stock</span>
                 ) : (
                   <span className="text-clay-500">Out of stock</span>
                 )}
@@ -314,10 +347,10 @@ export default function ProductDetail() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button
               onClick={handleAdd}
-              disabled={soldOut}
+              disabled={soldOut || selectionStock === 0}
               className="btn-primary flex-1 sm:px-10 disabled:opacity-60"
             >
-              {soldOut ? 'Out of stock' : 'Add to cart'}
+              {soldOut || selectionStock === 0 ? 'Out of stock' : 'Add to cart'}
             </button>
             <button
               onClick={handleWishlist}
