@@ -264,6 +264,10 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
     discountPrice: product?.discountPrice ?? '',
     gstRate: product?.gstRate ?? 5,
     hsnCode: product?.hsnCode || '',
+    weightGrams: product?.weightGrams ?? '',
+    lengthCm: product?.lengthCm ?? '',
+    widthCm: product?.widthCm ?? '',
+    heightCm: product?.heightCm ?? '',
     stockQuantity: product?.stockQuantity ?? 0,
     lowStockThreshold: product?.lowStockThreshold ?? 5,
     images: product?.images || [],
@@ -390,6 +394,18 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
         <VField label="Discount price (₹)" name="discountPrice" type="number" value={form.discountPrice} onChange={handleChange} />
         <VField label="GST included in price (%)" name="gstRate" type="number" value={form.gstRate} onChange={handleChange} />
         <VField label="HSN code (optional)" name="hsnCode" value={form.hsnCode} onChange={handleChange} placeholder="e.g. 6205" />
+        <div className="sm:col-span-2 rounded-lg border border-stone-200 bg-stone-50 p-4">
+          <p className="text-sm font-semibold text-ink">Packed size (for courier shipping)</p>
+          <p className="mt-0.5 text-xs text-ink-light">
+            Weight and box size of one packed item. Couriers price by weight and size, so you&apos;ll need these to book a shipment.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <VField label="Weight (grams)" name="weightGrams" type="number" value={form.weightGrams} onChange={handleChange} placeholder="e.g. 350" />
+            <VField label="Length (cm)" name="lengthCm" type="number" value={form.lengthCm} onChange={handleChange} />
+            <VField label="Width (cm)" name="widthCm" type="number" value={form.widthCm} onChange={handleChange} />
+            <VField label="Height (cm)" name="heightCm" type="number" value={form.heightCm} onChange={handleChange} />
+          </div>
+        </div>
         <VField label="Low-stock threshold" name="lowStockThreshold" type="number" value={form.lowStockThreshold} onChange={handleChange} />
         <label className="flex items-center gap-2 text-sm sm:col-span-2">
           <input

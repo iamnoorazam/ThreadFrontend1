@@ -102,6 +102,21 @@ export default function AdminOrders() {
     }
   };
 
+  // Marks a delivered COD order as paid once the courier has handed over the cash.
+  const recordRemittance = async (order) => {
+    const reference = window.prompt('Courier remittance ID or bank UTR for this cash:');
+    if (reference === null) return;
+    const received = window.prompt('Amount received (₹):', String(order.total));
+    if (received === null) return;
+    try {
+      await api.post(`/orders/${order._id}/cod-remittance`, { reference, amount: received });
+      setNotice({ type: 'success', message: 'COD cash recorded. Vendors can now be paid for this order.' });
+      await load(pagination.page, filters);
+    } catch (err) {
+      setNotice({ type: 'error', message: parseErrorMessage(err) });
+    }
+  };
+
   const refund = async (order) => {
     if (!window.confirm('Mark this order as refunded? This records the refund against the order.')) return;
     await updateStatus(order._id, 'cancelled', 'refunded');
@@ -338,6 +353,11 @@ export default function AdminOrders() {
                     <span>Payment: <span className="font-medium capitalize text-ink">{order.paymentMethod}</span></span>
                     <span>Status: <span className="font-medium capitalize text-ink">{order.paymentStatus}</span></span>
                     {order.paymentId && <span>Ref: <span className="font-medium text-ink">{order.paymentId}</span></span>}
+                    {order.paymentMethod === 'cod' && order.paymentStatus === 'pending' && order.orderStatus === 'delivered' && (
+                      <button onClick={() => recordRemittance(order)} className="font-semibold text-brand-700 hover:underline">
+                        Record COD cash received
+                      </button>
+                    )}
                     <div className="flex items-center gap-3">
                       {order.paymentStatus !== 'refunded' && (
                         <button onClick={() => refund(order)} className="font-semibold text-red-600 hover:underline">

@@ -49,6 +49,8 @@ export default function VendorShopSettings() {
         legalName: shop.legalName,
         gstin: shop.gstin,
         registeredAddress: shop.registeredAddress,
+        pickupSameAsRegistered: shop.pickupSameAsRegistered !== false,
+        pickupAddress: shop.pickupAddress,
       });
       setShop(res.data.shop);
       setNotice({ type: 'success', message: 'Shop settings saved.' });
@@ -181,6 +183,35 @@ export default function VendorShopSettings() {
             <input className="input" placeholder="State" value={shop.registeredAddress?.state || ''} onChange={(e) => set('registeredAddress.state', e.target.value)} />
             <input className="input" placeholder="PIN code" value={shop.registeredAddress?.postalCode || ''} onChange={(e) => set('registeredAddress.postalCode', e.target.value)} />
           </div>
+        </div>
+
+        <div className="border-t border-stone-200 pt-5">
+          <h3 className="mb-1 font-display text-lg font-semibold text-ink">Pickup address</h3>
+          <p className="mb-3 text-sm text-ink-light">Where the courier collects your parcels.</p>
+          <label className="mb-4 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-brand-600"
+              checked={shop.pickupSameAsRegistered !== false}
+              onChange={(e) => set('pickupSameAsRegistered', e.target.checked)}
+            />
+            <span className="font-medium text-ink">Same as my registered address</span>
+          </label>
+          {shop.pickupSameAsRegistered === false && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <input className="input" placeholder="Contact person" value={shop.pickupAddress?.contactName || ''} onChange={(e) => set('pickupAddress.contactName', e.target.value)} />
+              <input className="input" placeholder="Contact mobile (10 digits)" value={shop.pickupAddress?.phone || ''} onChange={(e) => set('pickupAddress.phone', e.target.value)} />
+              <div className="sm:col-span-2">
+                <input className="input" placeholder="Address line 1" value={shop.pickupAddress?.line1 || ''} onChange={(e) => set('pickupAddress.line1', e.target.value)} />
+              </div>
+              <div className="sm:col-span-2">
+                <input className="input" placeholder="Address line 2 (optional)" value={shop.pickupAddress?.line2 || ''} onChange={(e) => set('pickupAddress.line2', e.target.value)} />
+              </div>
+              <input className="input" placeholder="City" value={shop.pickupAddress?.city || ''} onChange={(e) => set('pickupAddress.city', e.target.value)} />
+              <input className="input" placeholder="State" value={shop.pickupAddress?.state || ''} onChange={(e) => set('pickupAddress.state', e.target.value)} />
+              <input className="input" placeholder="PIN code" value={shop.pickupAddress?.postalCode || ''} onChange={(e) => set('pickupAddress.postalCode', e.target.value)} />
+            </div>
+          )}
         </div>
 
         <div className="border-t border-stone-200 pt-5">
