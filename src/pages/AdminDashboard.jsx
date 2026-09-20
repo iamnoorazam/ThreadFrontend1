@@ -7,6 +7,7 @@ import AdminOrders from './admin/AdminOrders';
 import AdminUsers from './admin/AdminUsers';
 import AdminContent from './admin/AdminContent';
 import AdminSettings from './admin/AdminSettings';
+import AdminPayouts from './admin/AdminPayouts';
 
 const tabs = [
   ['overview', 'Overview'],
@@ -14,6 +15,7 @@ const tabs = [
   ['products', 'Products'],
   ['categories', 'Categories'],
   ['orders', 'Orders'],
+  ['payouts', 'Payouts'],
   ['users', 'Users'],
   ['content', 'Content'],
   ['settings', 'Settings'],
@@ -49,6 +51,7 @@ export default function AdminDashboard() {
         {tab === 'products' && <AdminProducts />}
         {tab === 'categories' && <AdminCategories />}
         {tab === 'orders' && <AdminOrders />}
+        {tab === 'payouts' && <AdminPayouts />}
         {tab === 'users' && <AdminUsers />}
         {tab === 'content' && <AdminContent />}
         {tab === 'settings' && <AdminSettings />}

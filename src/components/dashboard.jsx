@@ -52,6 +52,7 @@ export const statusBadge = (status, overrides = {}) => {
     processing: 'bg-amber-100 text-amber-700',
     outOfStock: 'bg-stone-100 text-ink-light',
     archived: 'bg-stone-200 text-stone-500',
+    paid: 'bg-green-100 text-green-700',
     ...overrides,
   };
   return map[status] || 'bg-stone-100 text-ink-light';

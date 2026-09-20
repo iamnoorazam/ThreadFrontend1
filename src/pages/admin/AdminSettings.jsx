@@ -10,6 +10,8 @@ export default function AdminSettings() {
   const [notice, setNotice] = useState({ type: '', message: '' });
   const [form, setForm] = useState({
     platformCommission: '',
+    payoutHoldDays: 7,
+    payoutMinimum: 500,
     announcement: { enabled: false, text: '' },
     razorpay: { keyId: '', keySecret: '' },
   });
@@ -22,6 +24,8 @@ export default function AdminSettings() {
       setSettings(s);
       setForm({
         platformCommission: s.platformCommission ?? 10,
+        payoutHoldDays: s.payoutHoldDays ?? 7,
+        payoutMinimum: s.payoutMinimum ?? 500,
         announcement: {
           enabled: Boolean(s.announcement?.enabled),
           text: s.announcement?.text || '',
@@ -49,6 +53,8 @@ export default function AdminSettings() {
     try {
       await api.put('/admin/settings', {
         platformCommission: Number(form.platformCommission),
+        payoutHoldDays: Number(form.payoutHoldDays),
+        payoutMinimum: Number(form.payoutMinimum),
         announcement: form.announcement,
         razorpay: {
           keyId: form.razorpay.keyId,
@@ -89,6 +95,38 @@ export default function AdminSettings() {
               onChange={(e) => setForm((f) => ({ ...f, platformCommission: e.target.value }))}
             />
             <span className="text-sm font-semibold text-ink">%</span>
+          </div>
+        </div>
+
+        <div className="border-t border-stone-200 pt-5">
+          <h3 className="mb-1 font-display text-lg font-semibold text-ink">Vendor payouts</h3>
+          <p className="mb-3 text-sm text-ink-light">
+            Delivered orders become payable after the hold period (your return window), once payment is confirmed
+            and no return is open.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Hold after delivery (days)</label>
+              <input
+                type="number"
+                min="0"
+                max="60"
+                step="1"
+                className={inputClass}
+                value={form.payoutHoldDays}
+                onChange={(e) => setForm((f) => ({ ...f, payoutHoldDays: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="label">Minimum payout (₹)</label>
+              <input
+                type="number"
+                min="0"
+                className={inputClass}
+                value={form.payoutMinimum}
+                onChange={(e) => setForm((f) => ({ ...f, payoutMinimum: e.target.value }))}
+              />
+            </div>
           </div>
         </div>
 
