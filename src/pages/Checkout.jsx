@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import { useAuth } from '../store/AuthContext';
 import { useCart } from '../store/CartContext';
 import Spinner from '../components/Spinner';
 import { formatINR, parseErrorMessage } from '../utils/format';
@@ -17,7 +18,23 @@ const emptyAddress = {
   country: 'India',
 };
 
+const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
+
+const loadRazorpay = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const existing = document.querySelector(`script[src="${RAZORPAY_SCRIPT}"]`);
+    const script = existing || document.createElement('script');
+    script.addEventListener('load', () => resolve());
+    script.addEventListener('error', () => reject(new Error('Unable to load the payment window')));
+    if (!existing) {
+      script.src = RAZORPAY_SCRIPT;
+      document.body.appendChild(script);
+    }
+  });
+
 export default function Checkout() {
+  const { user } = useAuth();
   const { cart, subtotal, refresh } = useCart();
   const navigate = useNavigate();
 
@@ -36,9 +53,7 @@ export default function Checkout() {
 
   const paymentMethods = [
     ['cod', 'Cash on delivery'],
-    ['upi', 'UPI'],
-    ['card', 'Credit / Debit card'],
-    ...(razorpayEnabled ? [['razorpay', 'Razorpay']] : []),
+    ...(razorpayEnabled ? [['razorpay', 'Pay online (UPI, cards, netbanking)']] : []),
   ];
 
   // Keep the selected method valid if it becomes unavailable (e.g. Razorpay
@@ -83,6 +98,50 @@ export default function Checkout() {
     setAddress((a) => ({ ...a, [e.target.name]: e.target.value }));
   };
 
+  const finish = async (order) => {
+    await refresh().catch(() => {});
+    navigate('/order-confirmation', { state: { order } });
+  };
+
+  // Online payment: the server prices the cart and creates the Razorpay order,
+  // the customer pays in Razorpay's window, then the server verifies the
+  // signature before any order exists.
+  const payOnline = async (shippingAddress) => {
+    const { data } = await api.post('/orders/razorpay/create', { shippingAddress });
+    await loadRazorpay();
+
+    await new Promise((resolve, reject) => {
+      const rzp = new window.Razorpay({
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.orderId,
+        name: 'Thread & Co.',
+        description: 'Order payment',
+        prefill: { name: user?.name, email: user?.email, contact: user?.phone },
+        handler: async (payment) => {
+          try {
+            const res = await api.post('/orders/razorpay/verify', payment);
+            if (res.data.processing) {
+              await refresh().catch(() => {});
+              navigate('/dashboard?tab=orders');
+            } else {
+              await finish(res.data.order);
+            }
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        },
+        modal: { ondismiss: () => reject(new Error('Payment was cancelled')) },
+      });
+      rzp.on('payment.failed', (resp) =>
+        reject(new Error(resp?.error?.description || 'Payment failed'))
+      );
+      rzp.open();
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -92,10 +151,14 @@ export default function Checkout() {
         ...address,
         isDefault: false,
       };
-      const res = await api.post('/orders', { paymentMethod, shippingAddress });
-      navigate('/order-confirmation', { state: { order: res.data.order } });
+      if (paymentMethod === 'razorpay') {
+        await payOnline(shippingAddress);
+      } else {
+        const res = await api.post('/orders', { paymentMethod: 'cod', shippingAddress });
+        await finish(res.data.order);
+      }
     } catch (err) {
-      setError(parseErrorMessage(err, 'Unable to place order'));
+      setError(parseErrorMessage(err, err?.message || 'Unable to place order'));
     } finally {
       setBusy(false);
     }
@@ -264,7 +327,7 @@ export default function Checkout() {
           {error && <div className="mt-4 rounded-md bg-clay-50 px-4 py-3 text-sm text-clay-700">{error}</div>}
 
           <button type="submit" disabled={busy} className="btn-primary mt-5 w-full">
-            {busy ? 'Placing order…' : 'Place order'}
+            {busy ? 'Processing…' : paymentMethod === 'razorpay' ? 'Pay now' : 'Place order'}
           </button>
           <p className="mt-3 text-center font-mono text-[11px] uppercase tracking-tag text-ink/50">
             Free returns within 7 days
