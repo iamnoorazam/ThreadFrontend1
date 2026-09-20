@@ -120,7 +120,7 @@ export default function AdminProducts() {
         actions={
           <div className="flex flex-wrap gap-2">
             <button onClick={openCreate} className="btn-primary">Add product</button>
-            {['', 'active', 'draft', 'outOfStock'].map((s) => (
+            {['', 'active', 'draft', 'outOfStock', 'archived'].map((s) => (
               <button
                 key={s || 'all'}
                 onClick={() => setFilters((f) => ({ ...f, status: s }))}
@@ -228,7 +228,7 @@ export default function AdminProducts() {
                       onChange={(e) => moderate(p._id, { status: e.target.value })}
                       className="ml-3 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs capitalize"
                     >
-                      {['active', 'draft', 'outOfStock'].map((s) => (
+                      {['active', 'draft', 'outOfStock', 'archived'].map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
@@ -568,6 +568,7 @@ function ProductFormModal({ mode, product, shops, categories, subCategories, loa
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
                     <option value="outOfStock">Out of stock</option>
+                    <option value="archived">Archived</option>
                   </select>
                 </div>
                 {form.gender === 'kids' && (

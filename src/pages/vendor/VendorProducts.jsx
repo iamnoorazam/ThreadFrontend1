@@ -14,6 +14,7 @@ export default function VendorProducts() {
   const [editing, setEditing] = useState(null);
   const [notice, setNotice] = useState({ type: '', message: '' });
   const [shopStatus, setShopStatus] = useState(null);
+  const [view, setView] = useState('all');
 
   const load = useCallback(async () => {
     const [prodRes, catRes, subRes] = await Promise.all([
@@ -51,6 +52,26 @@ export default function VendorProducts() {
       setNotice({ type: 'error', message: parseErrorMessage(err) });
     }
   };
+
+  const changeStatus = async (product, status, message) => {
+    try {
+      await api.patch(`/products/${product._id}/status`, { status });
+      setNotice({ type: 'success', message });
+      await load();
+    } catch (err) {
+      setNotice({ type: 'error', message: parseErrorMessage(err) });
+    }
+  };
+
+  const archive = (product) => {
+    if (!window.confirm('Archive this product? It will be hidden from customers. You can restore it later.')) return;
+    changeStatus(product, 'archived', 'Product archived.');
+  };
+
+  // "All" is everything that isn't archived.
+  const visible = products.filter((p) =>
+    view === 'archived' ? p.status === 'archived' : view === 'draft' ? p.status === 'draft' : p.status !== 'archived'
+  );
 
   if (loading) return <Spinner />;
 
@@ -100,6 +121,39 @@ export default function VendorProducts() {
       ) : products.length === 0 ? (
         <EmptyBox title="No products yet" subtitle="Add your first product to get started." />
       ) : (
+        <>
+        <div className="mb-4 flex gap-2">
+          {[
+            ['all', 'All'],
+            ['draft', 'Drafts'],
+            ['archived', 'Archived'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                view === key
+                  ? 'border-brand-600 bg-brand-600 text-white'
+                  : 'border-stone-300 bg-white text-ink hover:bg-stone-50'
+              }`}
+            >
+              {label}
+              <span className="ml-1.5 opacity-70">
+                {products.filter((p) => (key === 'all' ? p.status !== 'archived' : p.status === key)).length}
+              </span>
+            </button>
+          ))}
+        </div>
+        {visible.length === 0 ? (
+          <EmptyBox
+            title={view === 'archived' ? 'No archived products' : view === 'draft' ? 'No drafts' : 'Nothing here'}
+            subtitle={
+              view === 'archived'
+                ? 'Products you archive are hidden from customers and kept here.'
+                : 'Add a product or switch tabs.'
+            }
+          />
+        ) : (
         <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wide text-ink-light">
@@ -112,7 +166,7 @@ export default function VendorProducts() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => {
+              {visible.map((p) => {
                 const lowStock = p.stockQuantity > 0 && p.stockQuantity <= (p.lowStockThreshold ?? 5);
                 return (
                   <tr key={p._id} className="border-b border-stone-100 last:border-0">
@@ -146,9 +200,40 @@ export default function VendorProducts() {
                       <button onClick={() => setEditing({ isNew: false, product: p })} className="font-semibold text-brand-700 hover:underline">
                         Edit
                       </button>
-                      <button onClick={() => handleDelete(p._id)} className="ml-4 font-semibold text-red-600 hover:underline">
-                        Delete
-                      </button>
+                      {p.status === 'archived' && (
+                        <button
+                          onClick={() => changeStatus(p, 'draft', 'Product restored as a draft.')}
+                          className="ml-4 font-semibold text-brand-700 hover:underline"
+                        >
+                          Restore
+                        </button>
+                      )}
+                      {p.status === 'draft' && (
+                        <button
+                          onClick={() => changeStatus(p, 'active', 'Product published.')}
+                          className="ml-4 font-semibold text-brand-700 hover:underline"
+                        >
+                          Publish
+                        </button>
+                      )}
+                      {(p.status === 'active' || p.status === 'outOfStock') && (
+                        <button
+                          onClick={() => changeStatus(p, 'draft', 'Product unpublished (now a draft).')}
+                          className="ml-4 font-semibold text-brand-700 hover:underline"
+                        >
+                          Unpublish
+                        </button>
+                      )}
+                      {p.status !== 'archived' && (
+                        <button onClick={() => archive(p)} className="ml-4 font-semibold text-amber-700 hover:underline">
+                          Archive
+                        </button>
+                      )}
+                      {p.status !== 'active' && p.status !== 'outOfStock' && (
+                        <button onClick={() => handleDelete(p._id)} className="ml-4 font-semibold text-red-600 hover:underline">
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -156,6 +241,8 @@ export default function VendorProducts() {
             </tbody>
           </table>
         </div>
+        )}
+        </>
       )}
     </div>
   );
@@ -283,6 +370,7 @@ function ProductForm({ editing, categories, subCategories, onDone, onCancel }) {
           <select name="status" className="input" value={form.status} onChange={handleChange}>
             <option value="draft">Draft</option>
             <option value="active">Active</option>
+            {product?.status === 'archived' && <option value="archived">Archived</option>}
           </select>
         </div>
         <VField label="Price (₹)" name="price" type="number" value={form.price} onChange={handleChange} required />

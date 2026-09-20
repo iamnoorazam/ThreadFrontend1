@@ -3,7 +3,7 @@ import { useCart } from '../store/CartContext';
 import { formatINR } from '../utils/format';
 
 export default function Cart() {
-  const { cart, subtotal, updateItem, removeItem, loading, isGuest } = useCart();
+  const { cart, subtotal, updateItem, removeItem, loading, isGuest, hasUnavailable } = useCart();
 
   const shippingFee = subtotal >= 1000 ? 0 : 50;
   const total = subtotal + shippingFee;
@@ -65,6 +65,11 @@ export default function Cart() {
                     <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-ink-light">
                       {[item.size, item.color].filter(Boolean).join(' · ') || 'One size'}
                     </p>
+                    {item.unavailable && (
+                      <p className="mt-1 text-xs font-semibold text-clay-600">
+                        No longer available. Remove it to check out.
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => removeItem(item._id)}
@@ -125,9 +130,15 @@ export default function Cart() {
             </p>
           )}
 
-          <Link to="/checkout" className="btn-primary mt-5 w-full">
-            {isGuest ? 'Log in to checkout' : 'Proceed to checkout'}
-          </Link>
+          {hasUnavailable ? (
+            <button type="button" disabled className="btn-primary mt-5 w-full opacity-50">
+              Remove unavailable items to continue
+            </button>
+          ) : (
+            <Link to="/checkout" className="btn-primary mt-5 w-full">
+              {isGuest ? 'Log in to checkout' : 'Proceed to checkout'}
+            </Link>
+          )}
           {isGuest && (
             <p className="mt-3 text-center text-xs text-ink-light">
               Your cart is saved. You only need an account when you pay.

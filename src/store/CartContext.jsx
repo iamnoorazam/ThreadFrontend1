@@ -203,15 +203,19 @@ export const CartProvider = ({ children }) => {
   );
 
   const subtotal = useMemo(
-    () => cart?.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0,
+    () =>
+      cart?.items?.reduce((sum, item) => (item.unavailable ? sum : sum + item.price * item.quantity), 0) || 0,
     [cart]
   );
+
+  const hasUnavailable = useMemo(() => Boolean(cart?.items?.some((item) => item.unavailable)), [cart]);
 
   const value = useMemo(
     () => ({
       cart,
       loading,
       isGuest: !isAuthenticated,
+      hasUnavailable,
       itemCount,
       subtotal,
       refresh,
@@ -220,7 +224,7 @@ export const CartProvider = ({ children }) => {
       removeItem,
       clearCart,
     }),
-    [cart, loading, isAuthenticated, itemCount, subtotal, refresh, addToCart, updateItem, removeItem, clearCart]
+    [cart, loading, isAuthenticated, itemCount, subtotal, hasUnavailable, refresh, addToCart, updateItem, removeItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

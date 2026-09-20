@@ -6,7 +6,7 @@ import { formatINR } from '../utils/format';
 // Slide-in cart drawer. Opens when an item is added to the cart.
 export default function CartDrawer() {
   const { cartOpen, closeCart } = useUi();
-  const { cart, subtotal, updateItem, removeItem } = useCart();
+  const { cart, subtotal, updateItem, removeItem, hasUnavailable } = useCart();
 
   const items = cart?.items || [];
   const shippingFee = subtotal >= 1000 ? 0 : 50;
@@ -93,6 +93,9 @@ export default function CartDrawer() {
                     <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-ink-light">
                       {[item.size, item.color].filter(Boolean).join(' · ') || 'One size'}
                     </p>
+                    {item.unavailable && (
+                      <p className="mt-1 text-xs font-semibold text-clay-600">No longer available</p>
+                    )}
                     <div className="mt-auto flex items-center justify-between pt-2">
                       <div className="flex items-center rounded-full border border-ink/15">
                         <button
@@ -141,9 +144,15 @@ export default function CartDrawer() {
                   <dd className="font-mono">{formatINR(total)}</dd>
                 </div>
               </dl>
-              <Link to="/checkout" onClick={closeCart} className="btn-primary mt-4 w-full">
-                Checkout
-              </Link>
+              {hasUnavailable ? (
+                <button type="button" disabled className="btn-primary mt-4 w-full opacity-50">
+                  Remove unavailable items
+                </button>
+              ) : (
+                <Link to="/checkout" onClick={closeCart} className="btn-primary mt-4 w-full">
+                  Checkout
+                </Link>
+              )}
               <Link
                 to="/cart"
                 onClick={closeCart}
