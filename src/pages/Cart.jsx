@@ -1,28 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../store/AuthContext';
 import { useCart } from '../store/CartContext';
 import { formatINR } from '../utils/format';
 
 export default function Cart() {
-  const { isAuthenticated } = useAuth();
-  const { cart, subtotal, updateItem, removeItem, loading } = useCart();
+  const { cart, subtotal, updateItem, removeItem, loading, isGuest } = useCart();
 
   const shippingFee = subtotal >= 1000 ? 0 : 50;
   const total = subtotal + shippingFee;
   const items = cart?.items || [];
-
-  if (!isAuthenticated) {
-    return (
-      <div className="mx-auto max-w-page px-4 py-24 text-center sm:px-6 lg:px-8">
-        <p className="overline-label text-brand-700">Your cart</p>
-        <h1 className="mt-2 font-display text-4xl text-ink">Your cart</h1>
-        <p className="mt-3 text-sm text-ink-light">Log in to see the items in your cart.</p>
-        <Link to="/login" className="btn-primary mt-7 inline-flex">
-          Log in
-        </Link>
-      </div>
-    );
-  }
 
   if (loading && !cart) {
     return <div className="py-24 text-center font-mono text-xs uppercase tracking-tag text-ink-light">Loading cart…</div>;
@@ -141,8 +126,13 @@ export default function Cart() {
           )}
 
           <Link to="/checkout" className="btn-primary mt-5 w-full">
-            Proceed to checkout
+            {isGuest ? 'Log in to checkout' : 'Proceed to checkout'}
           </Link>
+          {isGuest && (
+            <p className="mt-3 text-center text-xs text-ink-light">
+              Your cart is saved. You only need an account when you pay.
+            </p>
+          )}
           <Link
             to="/shop"
             className="mt-4 block text-center text-sm font-semibold text-ink-light underline-offset-4 hover:text-brand-700 hover:underline"

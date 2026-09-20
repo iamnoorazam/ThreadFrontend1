@@ -27,10 +27,6 @@ export default function ProductCard({ product, feature = false }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     if (soldOut) return;
     const result = await addToCart({ productId: product._id, quantity: 1 });
     if (result.ok) {

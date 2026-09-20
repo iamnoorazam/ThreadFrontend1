@@ -40,7 +40,11 @@ export default function Login() {
       <div className="mb-10 text-center">
         <p className="overline-label text-brand-700">Welcome back</p>
         <h1 className="mt-2 font-display text-4xl text-ink">Log in</h1>
-        <p className="mt-2 text-sm text-ink-light">Continue shopping with Thread &amp; Co.</p>
+        <p className="mt-2 text-sm text-ink-light">
+          {from === '/checkout'
+            ? 'Log in to complete your order. Your cart is saved.'
+            : 'Continue shopping with Thread & Co.'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-lg border border-ink/10 bg-bone-light p-8 shadow-sm">
@@ -85,7 +89,7 @@ export default function Login() {
 
       <p className="mt-6 text-center text-sm text-ink-light">
         New to Thread &amp; Co.?{' '}
-        <Link to="/signup" className="font-semibold text-brand-700 underline-offset-4 hover:underline">
+        <Link to="/signup" state={{ from }} className="font-semibold text-brand-700 underline-offset-4 hover:underline">
           Create an account
         </Link>
       </p>

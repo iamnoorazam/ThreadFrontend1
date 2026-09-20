@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import { parseErrorMessage } from '../utils/format';
 
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || '/';
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function Signup() {
     setError('');
     try {
       await signup({ name: form.name, email: form.email, phone: form.phone, password: form.password });
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err) {
       setError(parseErrorMessage(err, 'Unable to create account'));
     } finally {
@@ -39,7 +41,11 @@ export default function Signup() {
       <div className="mb-10 text-center">
         <p className="overline-label text-brand-700">New here</p>
         <h1 className="mt-2 font-display text-4xl text-ink">Create your account</h1>
-        <p className="mt-2 text-sm text-ink-light">Shop smarter with a Thread &amp; Co. account.</p>
+        <p className="mt-2 text-sm text-ink-light">
+          {from === '/checkout'
+            ? 'Create an account to complete your order. Your cart is saved.'
+            : 'Shop smarter with a Thread & Co. account.'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-lg border border-ink/10 bg-bone-light p-8 shadow-sm">
@@ -129,7 +135,7 @@ export default function Signup() {
 
       <p className="mt-6 text-center text-sm text-ink-light">
         Already have an account?{' '}
-        <Link to="/login" className="font-semibold text-brand-700 underline-offset-4 hover:underline">
+        <Link to="/login" state={{ from }} className="font-semibold text-brand-700 underline-offset-4 hover:underline">
           Log in
         </Link>
       </p>

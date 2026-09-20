@@ -67,10 +67,6 @@ export default function ProductDetail() {
     isAuthenticated && user && user.role === 'customer' && !reviews.some((r) => r.userId?._id === user.id);
 
   const handleAdd = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     if (soldOut) return;
     setNotice({ type: '', message: '' });
     const result = await addToCart({ productId: id, quantity, size, color });
