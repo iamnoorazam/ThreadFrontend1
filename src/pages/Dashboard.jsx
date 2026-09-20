@@ -1,3 +1,4 @@
+import VerifyEmailNotice from '../components/VerifyEmailNotice';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
@@ -40,6 +41,7 @@ export default function Dashboard() {
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <p className="overline-label text-brand-700">Welcome back</p>
       <h1 className="mt-1 font-display text-4xl text-ink">My account</h1>
+      <VerifyEmailNotice />
 
       <div className="mt-8 flex gap-1 overflow-x-auto border-b border-ink/10">
         {tabs.map(([key, label]) => (

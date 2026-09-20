@@ -12,6 +12,9 @@ import ShopDetail from './pages/ShopDetail';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import Signup from './pages/Signup';
 import BecomeSeller from './pages/BecomeSeller';
 import Cart from './pages/Cart';
@@ -44,6 +47,9 @@ export default function App() {
       <Route path="/shop/:id" element={<Layout><ShopDetail /></Layout>} />
       <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
       <Route path="/login" element={<Layout><Login /></Layout>} />
+      <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+      <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+      <Route path="/verify-email" element={<Layout><VerifyEmail /></Layout>} />
       <Route path="/admin/login" element={<Layout><AdminLogin /></Layout>} />
       <Route path="/signup" element={<Layout><Signup /></Layout>} />
       <Route path="/become-seller" element={<Layout><BecomeSeller /></Layout>} />

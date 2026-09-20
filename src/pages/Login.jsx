@@ -85,6 +85,11 @@ export default function Login() {
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {busy ? 'Logging in…' : 'Log in'}
         </button>
+        <p className="mt-4 text-center text-sm">
+          <Link to="/forgot-password" className="text-ink-light underline-offset-4 hover:text-brand-700 hover:underline">
+            Forgot your password?
+          </Link>
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-light">
