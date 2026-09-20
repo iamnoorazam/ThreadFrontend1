@@ -217,8 +217,50 @@ export default function OrderTracking() {
         </button>
       </div>
 
-      {/* Courier / tracking number */}
-      {(order.tracking?.courier || order.tracking?.trackingNumber) && (
+      {/* Shipments: one per seller, each with its own status and tracking */}
+      {order.subOrders?.length > 0 && (
+        <div className="mt-8 rounded-xl border border-ink/10 bg-white">
+          <div className="border-b border-ink/10 px-6 py-4">
+            <p className="font-mono text-[11px] uppercase tracking-tag text-ink/50">
+              {order.subOrders.length > 1 ? `Shipments (${order.subOrders.length})` : 'Shipment'}
+            </p>
+          </div>
+          <div className="divide-y divide-ink/10">
+            {order.subOrders.map((sub) => {
+              const link = /^https?:\/\//.test(sub.tracking?.trackingNumber || '') ? sub.tracking.trackingNumber : '';
+              return (
+                <div key={sub._id} className="flex flex-wrap items-start justify-between gap-4 px-6 py-5 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">{sub.shopId?.shopName || 'Seller'}</p>
+                    <p className="mt-0.5 text-xs text-ink/50">
+                      {sub.items.map((i) => `${i.title} × ${i.quantity}`).join(', ')}
+                    </p>
+                    {(sub.tracking?.courier || sub.tracking?.trackingNumber) && (
+                      <p className="mt-2 text-xs text-ink-light">
+                        {sub.tracking.courier}
+                        {sub.tracking.courier && sub.tracking.trackingNumber ? ' · ' : ''}
+                        {link ? (
+                          <a href={link} target="_blank" rel="noreferrer" className="text-brand-700 underline-offset-4 hover:underline">
+                            Track shipment ↗
+                          </a>
+                        ) : (
+                          sub.tracking.trackingNumber
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <span className="rounded-full border border-brand-600 px-3 py-1 font-mono text-[10px] uppercase tracking-tag text-brand-700">
+                    {sub.orderStatus.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Courier / tracking number (orders placed before shipments existed) */}
+      {!order.subOrders?.length && (order.tracking?.courier || order.tracking?.trackingNumber) && (
         <div className="mt-8 rounded-xl border border-ink/10 bg-white p-6">
           <p className="font-mono text-[11px] uppercase tracking-tag text-ink/50">Shipping carrier</p>
           <div className="mt-3 flex flex-wrap gap-8">

@@ -35,7 +35,7 @@ export default function VendorOrders() {
     load(1, statusFilter);
   }, [load, statusFilter]);
 
-  const updateItemStatus = async (orderId, itemId, status) => {
+  const updateStatus = async (subOrderId, status) => {
     try {
       let courier;
       let trackingNumber;
@@ -43,8 +43,8 @@ export default function VendorOrders() {
         courier = window.prompt('Courier name (e.g. BlueDart, Delhivery):') || undefined;
         trackingNumber = window.prompt('Tracking number or URL:') || undefined;
       }
-      await api.patch(`/vendor/orders/${orderId}/items/${itemId}/status`, { status, courier, trackingNumber });
-      setNotice({ type: 'success', message: 'Order item status updated.' });
+      await api.patch(`/vendor/orders/${subOrderId}/status`, { status, courier, trackingNumber });
+      setNotice({ type: 'success', message: 'Order status updated.' });
       await load(pagination.page, statusFilter);
     } catch (err) {
       setNotice({ type: 'error', message: parseErrorMessage(err) });
@@ -57,7 +57,7 @@ export default function VendorOrders() {
     <div>
       <PanelHeading
         title="Orders"
-        subtitle="Orders containing your products, with per-item fulfilment status."
+        subtitle="Your part of each customer order. Update the status as you pack and ship."
         actions={
           <div className="flex gap-2">
             {['all', ...ITEM_STATUSES].map((s) => (
@@ -89,7 +89,7 @@ export default function VendorOrders() {
               <div key={order._id} className="rounded-xl border border-stone-200 bg-white p-6">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-ink">Order {order._id.slice(-8).toUpperCase()}</p>
+                    <p className="font-semibold text-ink">Order {String(order.orderId).slice(-8).toUpperCase()}</p>
                     <p className="text-xs text-ink-light">
                       {formatDateTime(order.createdAt)} · Customer: {order.userId?.name || '—'}
                     </p>
@@ -99,6 +99,16 @@ export default function VendorOrders() {
                     <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-semibold capitalize text-ink-light">
                       {order.paymentStatus}
                     </span>
+                    <select
+                      value={order.orderStatus}
+                      onChange={(e) => updateStatus(order._id, e.target.value)}
+                      aria-label="Fulfilment status"
+                      className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs font-semibold capitalize"
+                    >
+                      {[...new Set([...ITEM_STATUSES, order.orderStatus])].map((s) => (
+                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                      ))}
+                    </select>
                     <button
                       onClick={() => printInvoice(order, shopItems)}
                       className="btn-secondary px-3 py-1.5 text-xs"
@@ -120,18 +130,16 @@ export default function VendorOrders() {
                         </p>
                       </div>
                       <span className="font-semibold">{formatINR(item.price * item.quantity)}</span>
-                      <select
-                        value={item.status}
-                        onChange={(e) => updateItemStatus(order._id, item._id, e.target.value)}
-                        className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs font-semibold capitalize"
-                      >
-                        {ITEM_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
                     </div>
                   ))}
                 </div>
+
+                {(order.tracking?.courier || order.tracking?.trackingNumber) && (
+                  <p className="mt-3 text-xs text-ink-light">
+                    Shipping: {order.tracking.courier || '—'}
+                    {order.tracking.trackingNumber ? ` · ${order.tracking.trackingNumber}` : ''}
+                  </p>
+                )}
 
                 <div className="mt-4 flex justify-between border-t border-stone-200 pt-3 text-sm">
                   <span className="text-ink-light">
@@ -190,7 +198,7 @@ function printInvoice(order, items) {
   const addr = order.shippingAddress || {};
   win.document.write(`<!DOCTYPE html>
 <html>
-<head><title>Invoice ${order._id.slice(-8).toUpperCase()}</title>
+<head><title>Invoice ${String(order.orderId).slice(-8).toUpperCase()}</title>
 <style>
   body { font-family: Arial, sans-serif; color: #1c1917; margin: 40px; }
   h1 { font-size: 22px; margin: 0; }
@@ -206,7 +214,7 @@ function printInvoice(order, items) {
 </head>
 <body onload="window.print()">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div><h1>Thread &amp; Co.</h1><p class="muted">Invoice for order ${order._id.slice(-8).toUpperCase()}</p></div>
+    <div><h1>Thread &amp; Co.</h1><p class="muted">Invoice for order ${String(order.orderId).slice(-8).toUpperCase()}</p></div>
     <div style="text-align:right"><p class="muted">${formatDateTime(order.createdAt)}</p></div>
   </div>
   <div style="margin-top:20px">
@@ -225,7 +233,7 @@ function printInvoice(order, items) {
     ${order.discount ? `<div>Discount: -${formatINR(order.discount)}</div>` : ''}
     <div>Shipping: ${formatINR(order.shippingFee)}</div>
     <div class="grand">Total: ${formatINR(order.total)}</div>
-    <div class="muted">Payment: ${order.paymentMethod.toUpperCase()} · ${order.paymentStatus}</div>
+    <div class="muted">Payment: ${(order.paymentMethod || '').toUpperCase()} · ${order.paymentStatus || ''}</div>
   </div>
   <p class="foot">Generated on ${formatDate(new Date().toISOString())} · Thread &amp; Co. marketplace</p>
 </body>

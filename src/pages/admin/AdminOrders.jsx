@@ -4,7 +4,7 @@ import Spinner from '../../components/Spinner';
 import { Notice, PanelHeading, Badge, EmptyBox } from '../../components/dashboard';
 import { formatINR, formatDateTime, parseErrorMessage } from '../../utils/format';
 
-const ORDER_STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+const ORDER_STATUSES = ['pending', 'confirmed', 'packed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 
 function ShippingForm({ courier = '', trackingNumber = '', onSave }) {
@@ -107,9 +107,19 @@ export default function AdminOrders() {
     await updateStatus(order._id, 'cancelled', 'refunded');
   };
 
-  const saveShipping = async (order, courier, trackingNumber) => {
+  const updateShipmentStatus = async (order, subOrderId, orderStatus) => {
     try {
-      await api.patch(`/orders/${order._id}/status`, { courier, trackingNumber });
+      await api.patch(`/orders/${order._id}/status`, { orderStatus, subOrderId });
+      setNotice({ type: 'success', message: 'Shipment updated.' });
+      await load(pagination.page, filters);
+    } catch (err) {
+      setNotice({ type: 'error', message: parseErrorMessage(err) });
+    }
+  };
+
+  const saveShipping = async (order, courier, trackingNumber, subOrderId) => {
+    try {
+      await api.patch(`/orders/${order._id}/status`, { courier, trackingNumber, subOrderId });
       setNotice({ type: 'success', message: 'Shipping info saved.' });
       await load(pagination.page, filters);
     } catch (err) {
@@ -251,11 +261,46 @@ export default function AdminOrders() {
                   </div>
                 )}
 
-                <ShippingForm
-                  courier={order.tracking?.courier || ''}
-                  trackingNumber={order.tracking?.trackingNumber || ''}
-                  onSave={(courier, trackingNumber) => saveShipping(order, courier, trackingNumber)}
-                />
+                {order.subOrders?.length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    {order.subOrders.map((sub) => (
+                      <div key={sub._id} className="rounded-lg border border-stone-200 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-ink">
+                            {sub.shopId?.shopName || 'Vendor'}
+                            <span className="ml-2 font-normal text-ink-light">
+                              {sub.items.length} item{sub.items.length === 1 ? '' : 's'} · {formatINR(sub.subtotal)}
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Badge status={sub.orderStatus} />
+                            <select
+                              value={sub.orderStatus}
+                              onChange={(e) => updateShipmentStatus(order, sub._id, e.target.value)}
+                              aria-label="Shipment status"
+                              className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs font-semibold capitalize"
+                            >
+                              {ORDER_STATUSES.map((s) => (
+                                <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <ShippingForm
+                          courier={sub.tracking?.courier || ''}
+                          trackingNumber={sub.tracking?.trackingNumber || ''}
+                          onSave={(courier, trackingNumber) => saveShipping(order, courier, trackingNumber, sub._id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ShippingForm
+                    courier={order.tracking?.courier || ''}
+                    trackingNumber={order.tracking?.trackingNumber || ''}
+                    onSave={(courier, trackingNumber) => saveShipping(order, courier, trackingNumber)}
+                  />
+                )}
 
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full text-sm">
